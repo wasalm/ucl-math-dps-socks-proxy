@@ -1,0 +1,20 @@
+{
+  "name": "macs-printer-bridge",
+  "version": "1.0.0",
+  "description": "Creates a printer bridge so one can print via wifi",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "W.A. (Andries)",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^4.0.3"
+  },
+  "dependencies": {
+    "@coreui/coreui": "^2.1.6",
+    "simple-line-icons": "^2.4.1",
+    "socksv5": "0.0.6",
+    "ssh2": "^0.8.2"
+  }
+}

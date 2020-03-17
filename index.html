@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- <base href="./"> -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"> -->
+    <meta name="description" content="Heriot Watt MACS printer bridge">
+    <meta name="author" content="W.A. (Andries) Salm">
+    <meta name="keyword" content="MACS, Heriot Watt, Printer">
+    <title>UCL Math proxy</title>
+    <link href="node_modules/simple-line-icons/css/simple-line-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="node_modules/@coreui/coreui/dist/css/coreui.min.css">
+</head>
+
+<body class="app flex-row align-items-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="card-group">
+                    <div class="card">
+                        <div class="card-body py-5 p-4" id='logincard'>
+                            <h1>Login</h1>
+                            <p class="text-muted">Sign in on the Deparmental Server Machines</p>
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                      <i class="icon-user"></i>
+                                    </span>
+                                </div>
+                                <input class="form-control" type="text" placeholder="Username" id="username">
+                            </div>
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                      <i class="icon-lock"></i>
+                                    </span>
+                                </div>
+                                <input class="form-control" type="password" placeholder="Password" id="password">
+                            </div>
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                      <i class="icon-organization"></i>
+                                    </span>
+                                </div>
+                                <select class="form-control" id="server">
+                                  <option value="dps1">dps1</option>
+                                  <option value="dps2">dps2</option>
+                                  <option value="dps3">dps3</option>
+                                  <option value="dps4">dps4</option>
+                                  <option value="dps5">dps5</option>
+                                  <option value="dps6">dps6</option>
+                                  <option value="dps7">dps7</option>
+                                  <option value="dps8">dps8</option>
+                                  <option value="dps9">dps9</option>
+                                  <option value="dps10">dps10</option>
+                                </select>
+                            </div>
+                            <div class="input-group mb-4">
+                                <div class="form-check form-check-inline mr-1">
+                                  <input class="form-check-input" id="save-credentials" type="checkbox">
+                                  <label class="form-check-label" for="save-credentials">Save credentials</label>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6">
+                                    <button class="btn btn-primary px-4" type="button" id="loginBtn">Login</button>
+                                </div>
+                                <div class="col-6 text-right">
+                                    <button class="btn btn-link px-0" type="button" id="forgetBtn">Forgot password?</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body" id="printercard">
+                            <div class="row">
+                                <div class="col-12">
+                                    <button class="btn btn-close btn-sm btn-danger float-right" type="button" id="logoffBtn" style="margin-bottom: 15px;"><i class="icon-close"></i> Logoff</button>
+                                </div>
+                            </div>
+                            <h1>Proxy enabled</h1>
+                            <p style="margin-top:50px; margin-bottom: 50px;">You can use the UCL services via <b>Socks5</b></p>
+                        </div>
+                        <div class="card-footer" id='statusbar'>
+                            <i class="icon-drawer"></i>&nbsp;&nbsp;&nbsp;Proxy is ready on socks5://localhost:1080
+                        </div>
+                    </div>
+                    <div class="card text-white" style="width:10%;" id='rhs'>
+                        <div class="card-body" style="position: relative;">
+                            <div style="position: absolute; top: 50%; left: 0; transform: translateY(-50%); width: 100%; padding: 10px; text-align: center;">
+                                <img src="images/logo.svg" alt="Heriot Watt" />
+                                <p>&nbsp;</p>
+                                <h2>UCL dps proxy</h2>
+                                <p id='rhs-valid-msg'>Connect to the UCL Services via the dps machines</p>
+                                <p id='rhs-invalid-msg'>An error occurred. Check your credentials and your network connection.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        const { ipcRenderer } = require('electron');
+        const { dialog } = require('electron').remote
+
+        /*
+         *  Forgot password button click event
+         */
+        document.getElementById("forgetBtn").addEventListener("click", () => {
+            dialog.showMessageBox({type: "info", buttons: ["Ok"], title: "UCL Proxy", message: "Forget password?", detail: "Please contact ICT for new login credentials."})
+        });
+
+        /*
+         *  Login button click event
+         */
+        document.getElementById("loginBtn").addEventListener("click", () => {
+            ipcRenderer.send('login', {
+                //State for login card
+                username: document.getElementById("username").value,
+                password: document.getElementById("password").value,
+                selectedServer: document.getElementById("server").options.item(document.getElementById("server").selectedIndex).value,
+                saveCredentials: document.getElementById("save-credentials").checked
+            });
+        });
+
+        /*
+         *  Logoff button click event
+         */
+        document.getElementById("logoffBtn").addEventListener("click", () => {
+            ipcRenderer.send('logoff');
+        });
+
+        /*
+         *  State update event
+         */
+        ipcRenderer.on("setState", (event, arg) => {
+            updatePage(arg);
+        });
+
+        /*
+         *  On load, request current state and then show it
+         */
+        updatePage(ipcRenderer.sendSync('getState'));
+        ipcRenderer.send('show');
+
+        /*
+         *  Update the page with current status
+         */
+        function updatePage(state) {
+            //Default set right hand side(rhs) to valid state
+
+            // Printer is always valid if logged in
+            document.getElementById("rhs").classList.add("bg-primary");
+            document.getElementById("rhs").classList.remove("bg-danger");
+            document.getElementById("rhs-valid-msg").style.display = "";
+            document.getElementById("rhs-invalid-msg").style.display = "none";
+
+
+            if (state.enabled) {
+                //Show Printer Card
+                document.getElementById("logincard").style.display = "none";
+                document.getElementById("printercard").style.display = "";
+                document.getElementById("statusbar").style.display = "";
+
+            } else {
+                //Show Login Card
+                document.getElementById("logincard").style.display = "";
+                document.getElementById("printercard").style.display = "none";
+                document.getElementById("statusbar").style.display = "none";
+
+                //Update Login Card
+                document.getElementById("username").value = state.username;
+                document.getElementById("password").value = state.password;
+                document.getElementById("save-credentials").checked = state.saveCredentials;
+
+                if(!state.isValid) {
+                    document.getElementById("rhs").classList.remove("bg-primary");
+                    document.getElementById("rhs").classList.add("bg-danger");
+                    document.getElementById("rhs-valid-msg").style.display = "none";
+                    document.getElementById("rhs-invalid-msg").style.display = "";
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

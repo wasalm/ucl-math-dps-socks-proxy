@@ -1,0 +1,1 @@
+electron-packager . MACS-Printer-Bridge --platform=win32 --arch=x64 --icon=./images/icon_app
